@@ -6,47 +6,48 @@ import geometria.Rettangolo;
 import java.awt.Color;
 
 /**
- * L'ostacolo esplosivo: si rompe al primo colpo e, quando si rompe, esplode: colpisce una volta
- * ogni ostacolo non rotto che tocca la sua area allargata di PORTATA pixel su ogni lato.
- * È fermo.
- *
- * L'esplosione la fa il contenitore: il metodo colpisciAttorno(zona) della classe Ostacoli, che
- * scrivete voi; qui lo si chiama sul contenitore ricevuto: campo.colpisciAttorno(...).
- * Il rettangolo allargato si ottiene con area.allargato(PORTATA).
+ * L'ostacolo mobile: va su e giù fra un limite alto e un limite basso, sempre alla stessa velocità,
+ * e ai limiti torna indietro. Non si rompe mai: colpito, non cambia niente.
  *
  * IL PEZZO MANCANTE: i corpi dei metodi segnati «scrivete qui» e i campi che vi servono.
+ * I contratti dei metodi sono quelli dell'interfaccia Ostacolo (aprite Ostacolo.java), più quello
+ * che dice questo commento e quelli sopra il costruttore e sopra avanza.
  */
-public class OstacoloEsplosivo implements Ostacolo {
-    /** Fin dove arriva l'esplosione: PORTATA pixel oltre ogni lato dell'ostacolo. */
-    public static final double PORTATA = 30;
-    public static final Color COLORE = new Color(235, 90, 40);
+public class OstacoloMobile implements Ostacolo {
+    public static final Color COLORE = new Color(80, 200, 120);
 
-    private final Rettangolo area;
+    private Rettangolo area;   // non è final: l'ostacolo si muove
     // scrivete qui gli altri campi che vi servono
-    private boolean rotto = false;
+    private final double velocita;
+    private final double limiteAlto;
+    private final double limiteBasso;
+    private int verso = 1;   // 1 = scende, -1 = sale
 
-    /** Pretende: area non è null. Promette: un ostacolo esplosivo non rotto. */
-    public OstacoloEsplosivo(Rettangolo area) {
+    /**
+     * Pretende: area non è null; velocita è maggiore di 0; l'area sta fra i due limiti
+     * (limiteAlto <= area.y() e area.y() + area.altezza() <= limiteBasso).
+     * Promette: un ostacolo che sta in area e che, al primo avanza, comincia a scendere.
+     */
+    public OstacoloMobile(Rettangolo area, double velocita, double limiteAlto, double limiteBasso) {
         this.area = area;
+        // scrivete qui
+        this.velocita = velocita;
+        this.limiteAlto = limiteAlto;
+        this.limiteBasso = limiteBasso;
     }
 
     @Override
     public Rettangolo getArea() { return area; }
 
-    /**
-     * Oltre al contratto di Ostacolo: il primo colpo lo rompe, e quando si rompe l'ostacolo
-     * esplode (campo.colpisciAttorno con la sua area allargata di PORTATA).
-     */
+    /** Non si rompe mai: il colpo non cambia niente (né dove sta, né come si muove). */
     @Override
     public void colpisci(Ostacoli campo) {
-        if (rotto) throw new IllegalStateException("l'ostacolo esplosivo in " + area + " è già rotto");
-        rotto = true;                                   // PRIMA si rompe...
-        campo.colpisciAttorno(area.allargato(PORTATA)); // ...POI esplode
+        // niente: il mobile non si rompe mai
     }
 
     @Override
     public boolean isRotto() {
-        return rotto;
+        return false;
     }
 
     @Override
@@ -54,9 +55,26 @@ public class OstacoloEsplosivo implements Ostacolo {
         return COLORE;
     }
 
-
+    /**
+     * Promette: l'ostacolo si sposta in verticale di velocita pixel nel verso in cui sta andando
+     * (all'inizio verso il basso). Se così arriverebbe su un limite o lo supererebbe, si ferma
+     * esattamente sul limite e cambia verso: al passo dopo va dall'altra parte.
+     * Il bordo alto non va mai sopra limiteAlto, il bordo basso mai sotto limiteBasso
+     * (area.y() + area.altezza() <= limiteBasso); x, larghezza e altezza non cambiano.
+     */
     @Override
     public void avanza() {
-        // niente: è fermo
+        // scrivete qui
+        double nuovaY = area.y() + verso * velocita;
+
+    if (verso == 1 && nuovaY + area.altezza() >= limiteBasso) {
+        nuovaY = limiteBasso - area.altezza();   // si ferma esattamente sul limite basso
+        verso = -1;
+    } else if (verso == -1 && nuovaY <= limiteAlto) {
+        nuovaY = limiteAlto;                     // si ferma esattamente sul limite alto
+        verso = 1;
+    }
+
+    area = new Rettangolo(area.x(), nuovaY, area.larghezza(), area.altezza());
     }
 }
